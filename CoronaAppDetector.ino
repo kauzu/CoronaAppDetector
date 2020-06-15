@@ -14,7 +14,9 @@
 #define SEGMENT_F 13
 #define SEGMENT_G 27
  
- 
+
+#define SLOTS 3
+
 String Address = "00:AA:FF:13:37:42";
  
 Ticker Tic;
@@ -133,35 +135,41 @@ int scanTime = 30;
 
 
 int slot = 0;
-std::unordered_set<std::string>* seen[11];
+int old = 0;
+std::unordered_set<std::string>* seen[SLOTS];
 void sTick()  // Wird jede Sekunde ausgefüert
 { 
-  Serial.println("Tick");
-  slot = ++slot%10; //increment in %10
+  slot = ++slot%SLOTS; //increment in %10
   seen[slot]->clear();//clear
   int sum = 0;
   int fullSlots = 0;
   /*the problem i'm solving with that is that after 15 minutes a device changes its mac, so we can only track a device for a 15 minute period, but it we take the 
   average number of devices seen in the last 100 seconds and round down we should be fine. also i didn't want to implement some median function which would have been better*/ 
-  for (int i = 0; i < 10; i++)
+  for (int i = 0; i < SLOTS; i++)
   {
     std::unordered_set<std::string>::iterator it = seen[i]->begin();
- 
+
+    if (seen[i]->size() > 0)
+        Serial.println("============");
     // Iterate till the end of set
     while (it != seen[i]->end())
     {
       Serial.println(it->c_str());
       it++;
     }
-    Serial.println("============");
     sum = sum+ seen[i]->size();
     if (seen[i]->size() > 0)
       fullSlots++;
   }
-  int near = sum / fullSlots;
+  int near = 0;
+  if (fullSlots > 0)
+    near = sum / fullSlots;
   
   //tell serial the number of devices
-  Serial.println(near);
+  if (near != old){
+    Serial.println(near);
+    old = near;
+  }
   //print to 7segment display. 
   printNumber(near);
 }
@@ -192,7 +200,7 @@ class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks
 void setup() 
 {
   //we have 10 slots, each stores the macs seen in a second. so we record the seen macs from the last 10 secods
-  for (int i = 0; i < 11; i++)
+  for (int i = 0; i < SLOTS; i++)
   {
     seen[i] = new std::unordered_set<std::string>();
   }
@@ -211,8 +219,8 @@ void setup()
   pinMode(SEGMENT_F, OUTPUT);
   pinMode(SEGMENT_G, OUTPUT);
 
-  //every 10 second we want to do some stuff
-  Tic.attach( 10,sTick);
+  //every 2 second we want to do some stuff
+  Tic.attach( 2,sTick);
 }
  
 void loop()
