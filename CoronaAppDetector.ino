@@ -133,20 +133,32 @@ int scanTime = 30;
 
 
 int slot = 0;
-std::unordered_set<std::string>* seen[10];
+std::unordered_set<std::string>* seen[11];
 void sTick()  // Wird jede Sekunde ausgefüert
 { 
   Serial.println("Tick");
   slot = ++slot%10; //increment in %10
   seen[slot]->clear();//clear
   int sum = 0;
+  int fullSlots = 0;
   /*the problem i'm solving with that is that after 15 minutes a device changes its mac, so we can only track a device for a 15 minute period, but it we take the 
   average number of devices seen in the last 100 seconds and round down we should be fine. also i didn't want to implement some median function which would have been better*/ 
   for (int i = 0; i < 10; i++)
   {
+    std::unordered_set<std::string>::iterator it = seen[i]->begin();
+ 
+    // Iterate till the end of set
+    while (it != seen[i]->end())
+    {
+      Serial.println(it->c_str());
+      it++;
+    }
+    Serial.println("============");
     sum = sum+ seen[i]->size();
+    if (seen[i]->size() > 0)
+      fullSlots++;
   }
-  int near = sum / 10;
+  int near = sum / fullSlots;
   
   //tell serial the number of devices
   Serial.println(near);
@@ -163,6 +175,15 @@ class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks
       {
         seen[slot]->insert(advertisedDevice.getAddress().toString()); //save sender mac to the set
       }
+      else if (advertisedDevice.haveServiceUUID())
+      {
+        Serial.println(advertisedDevice.getServiceUUID().toString().c_str());
+        
+      }
+      else
+      {
+        Serial.println(advertisedDevice.toString().c_str());
+      }
     }
 };
 
@@ -171,7 +192,7 @@ class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks
 void setup() 
 {
   //we have 10 slots, each stores the macs seen in a second. so we record the seen macs from the last 10 secods
-  for (int i = 0; i < 10; i++)
+  for (int i = 0; i < 11; i++)
   {
     seen[i] = new std::unordered_set<std::string>();
   }
