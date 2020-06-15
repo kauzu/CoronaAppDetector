@@ -16,6 +16,7 @@
  
 
 #define SLOTS 3
+#define TICK_INTERVAL 60
 
 String Address = "00:AA:FF:13:37:42";
  
@@ -219,8 +220,8 @@ void setup()
   pinMode(SEGMENT_F, OUTPUT);
   pinMode(SEGMENT_G, OUTPUT);
 
-  //every 2 second we want to do some stuff
-  Tic.attach( 2,sTick);
+  //every TICK_INTERVAL second we want to do some stuff
+  Tic.attach( TICK_INTERVAL,sTick);
 }
  
 void loop()
